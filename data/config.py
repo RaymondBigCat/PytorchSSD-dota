@@ -4,10 +4,30 @@
 import cv2
 cv2.setNumThreads(0)  # pytorch issue 1355: possible deadlock in dataloader
 # note: if you used our download scripts, this should be right
-VOCroot = '/home/user/Database/VOCdevkit'  # path to VOCdevkit root dir
+#VOCroot = '/home/user/Database/VOCdevkit'  # path to VOCdevkit root dir
+VOCroot = '/home/raymond/project/PytorchSSD-dota/data/VOCdevkit'
 COCOroot = '/home/user/Database/MSCOCO2017'
+DOTAroot = '/home/raymond/project/faster_rcnn_dota/data/VOCdevkit2007'
 
 # RFB CONFIGS
+DOTA_500 = {
+    'feature_maps': [38, 19, 10, 5, 3, 1],
+
+    'min_dim': 300,
+
+    'steps': [8, 16, 32, 64, 100, 300],
+
+    'min_sizes': [30, 60, 111, 162, 213, 264],
+
+    'max_sizes': [60, 111, 162, 213, 264, 315],
+
+    'aspect_ratios': [[2, 3], [2, 3], [2, 3], [2, 3], [2], [2]],
+
+    'variance': [0.1, 0.2],
+
+    'clip': True,
+}
+
 VOC_300 = {
     'feature_maps': [38, 19, 10, 5, 3, 1],
 

@@ -12,9 +12,9 @@ import torch.nn.init as init
 import torch.optim as optim
 import torch.utils.data as data
 from torch.autograd import Variable
-
+os.environ["CUDA_VISIBLE_DEVICES"] = "0" #设置GPU1可见
 from data import VOCroot, COCOroot, VOC_300, VOC_512, COCO_300, COCO_512, COCO_mobile_300, AnnotationTransform, \
-    COCODetection, VOCDetection, detection_collate, BaseTransform, preproc
+    COCODetection, VOCDetection, detection_collate, BaseTransform, preproc,DOTA_500, DOTAroot, DOTADetection
 from layers.functions import Detect, PriorBox
 from layers.modules import MultiBoxLoss
 from utils.nms_wrapper import nms
@@ -27,23 +27,23 @@ def str2bool(v):
 
 parser = argparse.ArgumentParser(
     description='Receptive Field Block Net Training')
-parser.add_argument('-v', '--version', default='SSD_vgg',
+parser.add_argument('-v', '--version', default='RFB_vgg',
                     help='RFB_vgg ,RFB_E_vgg RFB_mobile SSD_vgg version.')
-parser.add_argument('-s', '--size', default='512',
+parser.add_argument('-s', '--size', default='300',
                     help='300 or 512 input size.')
-parser.add_argument('-d', '--dataset', default='COCO',
+parser.add_argument('-d', '--dataset', default='DOTA',
                     help='VOC or COCO dataset')
 parser.add_argument(
     '--basenet', default='weights/vgg16_reducedfc.pth', help='pretrained base model')
 parser.add_argument('--jaccard_threshold', default=0.5,
                     type=float, help='Min Jaccard index for matching')
-parser.add_argument('-b', '--batch_size', default=8,
+parser.add_argument('-b', '--batch_size', default=16,
                     type=int, help='Batch size for training')
 parser.add_argument('--num_workers', default=4,
                     type=int, help='Number of workers used in dataloading')
 parser.add_argument('--cuda', default=True,
                     type=bool, help='Use cuda to train model')
-parser.add_argument('--ngpu', default=2, type=int, help='gpus')
+parser.add_argument('--ngpu', default=1, type=int, help='gpus')
 parser.add_argument('--lr', '--learning-rate',
                     default=4e-3, type=float, help='initial learning rate')
 parser.add_argument('--momentum', default=0.9, type=float, help='momentum')
@@ -74,20 +74,28 @@ parser.add_argument('--send_images_to_visdom', type=str2bool, default=False,
                     help='Sample a random image from each 10th batch, send it to visdom after augmentations step')
 args = parser.parse_args()
 
-save_folder = os.path.join(args.save_folder, args.version + '_' + args.size, args.date)
+# save_folder = os.path.join(args.save_folder, args.version + '_' + args.size, args.date)
+
+if args.dataset == 'VOC':
+    train_sets = [('2007', 'trainval'), ('2012', 'trainval')]
+    cfg = (VOC_300, VOC_512)[args.size == '512']
+# DOTA
+elif args.dataset == 'DOTA':
+    train_sets = [('2007', 'trainval')]
+    cfg = DOTA_500
+else:
+    train_sets = [('2017', 'train')]
+    cfg = (COCO_300, COCO_512)[args.size == '512']
+
+save_date = time.strftime('%Y-%m-%d-%H:%M',time.localtime(time.time()))
+save_folder = os.path.join(args.save_folder, args.version + '_' + args.dataset +'_'+ args.size,save_date)
+log_file_path = save_folder + '/train' + time.strftime('_%Y-%m-%d-%H-%M', time.localtime(time.time())) + '.log'
+# save_folder = os.path.join(args.save_folder, args.version + '_' + args.size, args.date)
 if not os.path.exists(save_folder):
     os.makedirs(save_folder)
 test_save_dir = os.path.join(save_folder, 'ss_predict')
 if not os.path.exists(test_save_dir):
     os.makedirs(test_save_dir)
-
-log_file_path = save_folder + '/train' + time.strftime('_%Y-%m-%d-%H-%M', time.localtime(time.time())) + '.log'
-if args.dataset == 'VOC':
-    train_sets = [('2007', 'trainval'), ('2012', 'trainval')]
-    cfg = (VOC_300, VOC_512)[args.size == '512']
-else:
-    train_sets = [('2017', 'train')]
-    cfg = (COCO_300, COCO_512)[args.size == '512']
 
 if args.version == 'RFB_vgg':
     from models.RFB_Net_vgg import build_net
@@ -114,6 +122,8 @@ elif 'mobile' in args.version:
 
 p = (0.6, 0.2)[args.version == 'RFB_mobile']
 num_classes = (21, 81)[args.dataset == 'COCO']
+if args.dataset == 'DOTA':
+    num_classes = 2
 batch_size = args.batch_size
 weight_decay = 0.0005
 gamma = 0.1
@@ -207,6 +217,12 @@ elif args.dataset == 'COCO':
         COCOroot, [('2017', 'val')], None)
     train_dataset = COCODetection(COCOroot, train_sets, preproc(
         img_dim, rgb_means, rgb_std, p))
+# DOTA
+elif args.dataset == 'DOTA':
+    testset = DOTADetection(
+        DOTAroot, [('2007', 'test')], None, AnnotationTransform())
+    train_dataset = DOTADetection(DOTAroot, train_sets, preproc(
+        img_dim, rgb_means, rgb_std, p), AnnotationTransform())
 else:
     print('Only VOC and COCO are supported now!')
     exit()
@@ -223,7 +239,9 @@ def train():
 
     stepvalues_VOC = (150 * epoch_size, 200 * epoch_size, 250 * epoch_size)
     stepvalues_COCO = (90 * epoch_size, 120 * epoch_size, 140 * epoch_size)
-    stepvalues = (stepvalues_VOC, stepvalues_COCO)[args.dataset == 'COCO']
+    # DOTA
+    stepvalues_DOTA = (150 * epoch_size, 200 * epoch_size, 250 * epoch_size)
+    stepvalues = stepvalues_DOTA
     print('Training', args.version, 'on', train_dataset.name)
     step_index = 0
 
@@ -272,19 +290,20 @@ def train():
             if epoch % args.test_frequency == 0 and epoch > 0:
                 net.eval()
                 top_k = (300, 200)[args.dataset == 'COCO']
-                if args.dataset == 'VOC':
+                if args.dataset == 'VOC'or'DOTA':
                     APs, mAP = test_net(test_save_dir, net, detector, args.cuda, testset,
-                                        BaseTransform(net.module.size, rgb_means, rgb_std, (2, 0, 1)),
+                                        BaseTransform(img_dim, rgb_means, rgb_std, (2, 0, 1)),
                                         top_k, thresh=0.01)
                     APs = [str(num) for num in APs]
                     mAP = str(mAP)
                     log_file.write(str(iteration) + ' APs:\n' + '\n'.join(APs))
                     log_file.write('mAP:\n' + mAP + '\n')
+                """
                 else:
                     test_net(test_save_dir, net, detector, args.cuda, testset,
                              BaseTransform(net.module.size, rgb_means, rgb_std, (2, 0, 1)),
                              top_k, thresh=0.01)
-
+                """
                 net.train()
             epoch += 1
 
@@ -370,6 +389,8 @@ def test_net(save_folder, net, detector, cuda, testset, transform, max_per_image
     # dump predictions and assoc. ground truth to text file for now
     num_images = len(testset)
     num_classes = (21, 81)[args.dataset == 'COCO']
+    if args.dataset == 'DOTA':
+        num_classes = 2
     all_boxes = [[[] for _ in range(num_images)]
                  for _ in range(num_classes)]
 
