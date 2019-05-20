@@ -12,7 +12,7 @@ import torch.nn.init as init
 import torch.optim as optim
 import torch.utils.data as data
 from torch.autograd import Variable
-os.environ["CUDA_VISIBLE_DEVICES"] = "0" #设置GPU1可见
+os.environ["CUDA_VISIBLE_DEVICES"] = "1" #设置GPU1可见
 from data import VOCroot, COCOroot, VOC_300, VOC_512, COCO_300, COCO_512, COCO_mobile_300, AnnotationTransform, \
     COCODetection, VOCDetection, detection_collate, BaseTransform, preproc,DOTA_500, DOTAroot, DOTADetection
 from layers.functions import Detect, PriorBox
@@ -56,19 +56,19 @@ parser.add_argument('-max', '--max_epoch', default=300,
                     type=int, help='max epoch for retraining')
 parser.add_argument('--weight_decay', default=5e-4,
                     type=float, help='Weight decay for SGD')
-parser.add_argument('-we', '--warm_epoch', default=1,
+parser.add_argument('-we', '--warm_epoch', default=50,
                     type=int, help='max epoch for retraining')
 parser.add_argument('--gamma', default=0.1,
                     type=float, help='Gamma update for SGD')
 parser.add_argument('--log_iters', default=True,
                     type=bool, help='Print the loss at each iteration')
-parser.add_argument('--save_folder', default='weights/',
+parser.add_argument('--save_folder', default='/media/b622/HardDisk/DOTAweights/',
                     help='Location to save checkpoint models')
 parser.add_argument('--date', default='1213')
-parser.add_argument('--save_frequency', default=10)
+parser.add_argument('--save_frequency', default=5)
 parser.add_argument('--retest', default=False, type=bool,
                     help='test cache results')
-parser.add_argument('--test_frequency', default=10)
+parser.add_argument('--test_frequency', default=5)
 parser.add_argument('--visdom', default=False, type=str2bool, help='Use visdom to for loss visualization')
 parser.add_argument('--send_images_to_visdom', type=str2bool, default=False,
                     help='Sample a random image from each 10th batch, send it to visdom after augmentations step')
@@ -149,7 +149,7 @@ if not args.resume_net:
         for key in m.state_dict():
             if key.split('.')[-1] == 'weight':
                 if 'conv' in key:
-                    init.kaiming_normal(m.state_dict()[key], mode='fan_out')
+                    init.kaiming_normal_(m.state_dict()[key], mode='fan_out')
                 if 'bn' in key:
                     m.state_dict()[key][...] = 1
             elif key.split('.')[-1] == 'bias':
@@ -276,6 +276,7 @@ def train():
     batch_iterator = None
     mean_loss_c = 0
     mean_loss_l = 0
+    epoch_time = 0
     for iteration in range(start_iter, max_iter + 10):
         if (iteration % epoch_size == 0):
             # create batch iterator
@@ -284,6 +285,9 @@ def train():
                                                   collate_fn=detection_collate))
             loc_loss = 0
             conf_loss = 0
+            # epoch_time
+            print('Epoch time: %.4f sec'%(epoch_time))
+            epoch_time = 0
             if epoch % args.save_frequency == 0 and epoch > 0:
                 torch.save(net.state_dict(), os.path.join(save_folder, args.version + '_' + args.dataset + '_epoches_' +
                                                           repr(epoch) + '.pth'))
@@ -327,10 +331,12 @@ def train():
 
         if args.cuda:
             images = Variable(images.cuda())
-            targets = [Variable(anno.cuda(), volatile=True) for anno in targets]
+            #targets = [Variable(anno.cuda(), volatile=True) for anno in targets]
+            targets = [Variable(anno.cuda()) for anno in targets]
         else:
             images = Variable(images)
-            targets = [Variable(anno, volatile=True) for anno in targets]
+            #targets = [Variable(anno, volatile=True) for anno in targets]
+            targets = [Variable(anno) for anno in targets]
         # forward
         out = net(images)
         # backprop
@@ -339,13 +345,15 @@ def train():
         loss_l, loss_c = criterion(out, priors, targets)
         # odm branch loss
 
-        mean_loss_c += loss_c.data[0]
-        mean_loss_l += loss_l.data[0]
-
+        #mean_loss_c += loss_c.data[0]
+        #mean_loss_l += loss_l.data[0]
+        mean_loss_c += loss_c.item()
+        mean_loss_l += loss_l.item()
         loss = loss_l + loss_c
         loss.backward()
         optimizer.step()
         load_t1 = time.time()
+        epoch_time += load_t1 - load_t0
         if iteration % 10 == 0:
             print('Epoch:' + repr(epoch) + ' || epochiter: ' + repr(iteration % epoch_size) + '/' + repr(epoch_size)
                   + '|| Totel iter ' +
@@ -464,7 +472,7 @@ def test_net(save_folder, net, detector, cuda, testset, transform, max_per_image
         pickle.dump(all_boxes, f, pickle.HIGHEST_PROTOCOL)
 
     print('Evaluating detections')
-    if args.dataset == 'VOC':
+    if args.dataset == 'VOC'or'DOTA':
         APs, mAP = testset.evaluate_detections(all_boxes, save_folder)
         return APs, mAP
     else:

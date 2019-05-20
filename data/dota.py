@@ -208,7 +208,7 @@ class DOTADetection(data.Dataset):
         return path
 
     def _write_voc_results_file(self, all_boxes):
-        for cls_ind, cls in enumerate(VOC_CLASSES):
+        for cls_ind, cls in enumerate(DOTA_CLASSES):
             cls_ind = cls_ind
             if cls == '__background__':
                 continue
@@ -245,7 +245,7 @@ class DOTADetection(data.Dataset):
         print('VOC07 metric? ' + ('Yes' if use_07_metric else 'No'))
         if output_dir is not None and not os.path.isdir(output_dir):
             os.mkdir(output_dir)
-        for i, cls in enumerate(VOC_CLASSES):
+        for i, cls in enumerate(DOTA_CLASSES):
 
             if cls == '__background__':
                 continue

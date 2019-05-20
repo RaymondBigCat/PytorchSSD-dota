@@ -7,7 +7,7 @@ cv2.setNumThreads(0)  # pytorch issue 1355: possible deadlock in dataloader
 #VOCroot = '/home/user/Database/VOCdevkit'  # path to VOCdevkit root dir
 VOCroot = '/home/raymond/project/PytorchSSD-dota/data/VOCdevkit'
 COCOroot = '/home/user/Database/MSCOCO2017'
-DOTAroot = '/home/raymond/project/faster_rcnn_dota/data/VOCdevkit2007'
+DOTAroot = '/home/b622/project/PytorchSSD-dota/data/VOCdevkit'
 
 # RFB CONFIGS
 DOTA_500 = {
