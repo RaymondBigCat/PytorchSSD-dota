@@ -51,7 +51,7 @@ parser.add_argument('--momentum', default=0.9, type=float, help='momentum')
 parser.add_argument('--resume_net', default=False, help='resume net for retraining')
 parser.add_argument('--resume_epoch', default=0,
                     type=int, help='resume iter for retraining')
-
+# resume_time
 parser.add_argument('--resume_time', default='2019-05-20-21:48',
                     type=str, help='resume time for retraining')
 
@@ -68,13 +68,15 @@ parser.add_argument('--log_iters', default=True,
 parser.add_argument('--save_folder', default='/media/b622/HardDisk/DOTAweights/',
                     help='Location to save checkpoint models')
 parser.add_argument('--date', default='1213')
-parser.add_argument('--save_frequency', default=5)
+parser.add_argument('--save_frequency', default=20)
 parser.add_argument('--retest', default=False, type=bool,
                     help='test cache results')
-parser.add_argument('--test_frequency', default=5)
+parser.add_argument('--test_frequency', default=20)
 parser.add_argument('--visdom', default=False, type=str2bool, help='Use visdom to for loss visualization')
 parser.add_argument('--send_images_to_visdom', type=str2bool, default=False,
                     help='Sample a random image from each 10th batch, send it to visdom after augmentations step')
+# test or train
+parser.add_argument('--test_mode', default=False, type=bool, help='switch to test_mode')
 args = parser.parse_args()
 
 # save_folder = os.path.join(args.save_folder, args.version + '_' + args.size, args.date)
@@ -304,6 +306,7 @@ def train():
             if epoch % args.test_frequency == 0 and epoch > 0:
                 net.eval()
                 top_k = (300, 200)[args.dataset == 'COCO']
+                #if args.dataset == 'VOC':
                 if args.dataset == 'VOC'or'DOTA':
                     APs, mAP = test_net(test_save_dir, net, detector, args.cuda, testset,
                                         BaseTransform(img_dim, rgb_means, rgb_std, (2, 0, 1)),
@@ -499,5 +502,7 @@ def test():
     print('mAP = ',mAP)
 
 if __name__ == '__main__':
-    #train()
-    test()
+    if args.test_mode:
+        test()
+    else:
+        train()

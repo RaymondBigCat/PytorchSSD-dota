@@ -238,7 +238,7 @@ class DOTADetection(data.Dataset):
             'ImageSets',
             'Main',
             name + '.txt')
-        cachedir = os.path.join(self.root, 'annotations_cache')
+        cachedir = os.path.join(self.root, 'annotations_dota_cache') # 避免和VOC的cache起冲突
         aps = []
         # The PASCAL VOC metric changed in 2010
         use_07_metric = True if int(self._year) < 2010 else False
