@@ -52,6 +52,9 @@ parser.add_argument('--resume_net', default=False, help='resume net for retraini
 parser.add_argument('--resume_epoch', default=0,
                     type=int, help='resume iter for retraining')
 
+parser.add_argument('--resume_time', default='2019-05-20-21:48',
+                    type=str, help='resume time for retraining')
+
 parser.add_argument('-max', '--max_epoch', default=300,
                     type=int, help='max epoch for retraining')
 parser.add_argument('--weight_decay', default=5e-4,
@@ -172,8 +175,15 @@ if not args.resume_net:
 
 else:
     # load resume network
+    """
     resume_net_path = os.path.join(save_folder, args.version + '_' + args.dataset + '_epoches_' + \
                                    str(args.resume_epoch) + '.pth')
+    """
+    resume_time = args.resume_time
+    resume_net_path = os.path.join(args.save_folder, args.version + '_' + args.dataset +'_'+ args.size,
+                                   resume_time,
+                                   args.version + '_' + args.dataset + '_epoches_' + str(args.resume_epoch) + '.pth')
+    
     print('Loading resume network', resume_net_path)
     state_dict = torch.load(resume_net_path)
     # create new OrderedDict that does not contain `module.`
@@ -478,6 +488,16 @@ def test_net(save_folder, net, detector, cuda, testset, transform, max_per_image
     else:
         testset.evaluate_detections(all_boxes, save_folder)
 
+def test():
+    net.eval()
+    top_k = (300, 200)[args.dataset == 'COCO']
+    APs, mAP = test_net(test_save_dir, net, detector, args.cuda, testset,
+                        BaseTransform(img_dim, rgb_means, rgb_std, (2, 0, 1)),
+                        top_k, thresh=0.01)
+    APs = [str(num) for num in APs]
+    mAP = str(mAP)
+    print('mAP = ',mAP)
 
 if __name__ == '__main__':
-    train()
+    #train()
+    test()
