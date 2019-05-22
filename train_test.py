@@ -12,14 +12,13 @@ import torch.nn.init as init
 import torch.optim as optim
 import torch.utils.data as data
 from torch.autograd import Variable
-os.environ["CUDA_VISIBLE_DEVICES"] = "1" #设置GPU1可见
 from data import VOCroot, COCOroot, VOC_300, VOC_512, COCO_300, COCO_512, COCO_mobile_300, AnnotationTransform, \
     COCODetection, VOCDetection, detection_collate, BaseTransform, preproc,DOTA_500, DOTAroot, DOTADetection
 from layers.functions import Detect, PriorBox
 from layers.modules import MultiBoxLoss
 from utils.nms_wrapper import nms
 from utils.timer import Timer
-
+os.environ["CUDA_VISIBLE_DEVICES"] = "1" #设置GPU1可见
 
 def str2bool(v):
     return v.lower() in ("yes", "true", "t", "1")
@@ -77,8 +76,12 @@ parser.add_argument('--send_images_to_visdom', type=str2bool, default=False,
                     help='Sample a random image from each 10th batch, send it to visdom after augmentations step')
 # test or train
 parser.add_argument('--test_mode', default=False, type=bool, help='switch to test_mode')
+# choose the specific GPU to use
+parser.add_argument('--ind_GPU', default="0", type=str, help='choose the specific GPU to use')
+
 args = parser.parse_args()
 
+#os.environ["CUDA_VISIBLE_DEVICES"] = args.ind_GPU #设置GPU1可见
 # save_folder = os.path.join(args.save_folder, args.version + '_' + args.size, args.date)
 
 if args.dataset == 'VOC':
@@ -283,8 +286,16 @@ def train():
         start_iter = args.resume_epoch * epoch_size
     else:
         start_iter = 0
-
+    
     log_file = open(log_file_path, 'w')
+    # write some hyper-parameters
+    log_file.write('version: '+args.version+'\n')
+    log_file.write('dataset: '+args.dataset+'\n')
+    log_file.write('max_epoch: '+str(args.max_epoch)+'\n')
+    log_file.write('batch_size: '+str(args.batch_size)+'\n')
+    log_file.write('learning-rate: '+str(args.lr)+'\n')
+    log_file.write('warm_epoch: '+str(args.warm_epoch)+'\n')
+    
     batch_iterator = None
     mean_loss_c = 0
     mean_loss_l = 0
