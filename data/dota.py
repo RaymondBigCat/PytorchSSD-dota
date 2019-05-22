@@ -103,7 +103,7 @@ class DOTADetection(data.Dataset):
             (default: 'VOC2007')
     """
 
-    def __init__(self, root, image_sets, preproc=None, target_transform=None,
+    def __init__(self, root, subset_name, preproc=None, target_transform=None,
                  dataset_name='VOC2007'):
         self.root = root
         self.image_set = image_sets
@@ -113,11 +113,9 @@ class DOTADetection(data.Dataset):
         self._annopath = os.path.join('%s', 'Annotations', '%s.xml')
         self._imgpath = os.path.join('%s', 'JPEGImages', '%s.png')
         self.ids = list()
-        for (year, name) in image_sets:
-            self._year = year
-            rootpath = os.path.join(self.root, 'VOC' + year)
-            for line in open(os.path.join(rootpath, 'ImageSets', 'Main', name + '.txt')):
-                self.ids.append((rootpath, line.strip()))
+        rootpath = os.path.join(self.root, subset_name)
+        for line in open(os.path.join(rootpath, 'ImageSets', 'Main', name + '.txt')):
+            self.ids.append((rootpath, line.strip()))
 
     def __getitem__(self, index):
         img_id = self.ids[index]
@@ -201,7 +199,7 @@ class DOTADetection(data.Dataset):
     def _get_voc_results_file_template(self):
         filename = 'comp4_det_test' + '_{:s}.txt'
         filedir = os.path.join(
-            self.root, 'results', 'VOC' + self._year, 'Main')
+            self.root, 'results', subset_name, 'Main')
         if not os.path.exists(filedir):
             os.makedirs(filedir)
         path = os.path.join(filedir, filename)
@@ -227,7 +225,7 @@ class DOTADetection(data.Dataset):
                                        dets[k, 2] + 1, dets[k, 3] + 1))
 
     def _do_python_eval(self, output_dir='output'):
-        rootpath = os.path.join(self.root, 'VOC' + self._year)
+        rootpath = os.path.join(self.root, subset_name)
         name = self.image_set[0][1]
         annopath = os.path.join(
             rootpath,
@@ -241,7 +239,7 @@ class DOTADetection(data.Dataset):
         cachedir = os.path.join(self.root, 'annotations_dota_cache') # 避免和VOC的cache起冲突
         aps = []
         # The PASCAL VOC metric changed in 2010
-        use_07_metric = True if int(self._year) < 2010 else False
+        use_07_metric = True 
         print('VOC07 metric? ' + ('Yes' if use_07_metric else 'No'))
         if output_dir is not None and not os.path.isdir(output_dir):
             os.mkdir(output_dir)
