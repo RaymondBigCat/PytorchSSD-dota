@@ -86,7 +86,10 @@ if args.dataset == 'VOC':
     cfg = (VOC_300, VOC_512)[args.size == '512']
 # DOTA
 elif args.dataset == 'DOTA':
-    train_sets = [('2007', 'trainval')]
+    train_sets = 'subset_planes_500_gap200_GSC' # A subset of DOTA
+    train_list = 'trainval'
+    val_sets = 'subset_planes_500_gap200_val_GSC'
+    val_list = 'plane_val'
     cfg = DOTA_500
 else:
     train_sets = [('2017', 'train')]
@@ -232,9 +235,9 @@ elif args.dataset == 'COCO':
 # DOTA
 elif args.dataset == 'DOTA':
     testset = DOTADetection(
-        DOTAroot, [('2007', 'test')], None, AnnotationTransform())
+        DOTAroot, val_sets, None, AnnotationTransform(),dataset_name = val_list)
     train_dataset = DOTADetection(DOTAroot, train_sets, preproc(
-        img_dim, rgb_means, rgb_std, p), AnnotationTransform())
+        img_dim, rgb_means, rgb_std, p), AnnotationTransform(), dataset_name = train_list)
 else:
     print('Only VOC and COCO are supported now!')
     exit()

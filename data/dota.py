@@ -104,17 +104,24 @@ class DOTADetection(data.Dataset):
     """
 
     def __init__(self, root, subset_name, preproc=None, target_transform=None,
-                 dataset_name='VOC2007'):
+                 dataset_name='trainval'):
+        """
+        root: 根目录
+        subset_name: 子集名字
+        dataset_name: train/trainval/val/test （数据集类别）
+        """
         self.root = root
-        self.image_set = image_sets
+        self.subset_name = subset_name
         self.preproc = preproc
         self.target_transform = target_transform
         self.name = dataset_name
         self._annopath = os.path.join('%s', 'Annotations', '%s.xml')
         self._imgpath = os.path.join('%s', 'JPEGImages', '%s.png')
         self.ids = list()
-        rootpath = os.path.join(self.root, subset_name)
-        for line in open(os.path.join(rootpath, 'ImageSets', 'Main', name + '.txt')):
+        # 根目录 + 子集名 = 数据集数据路径
+        rootpath = os.path.join(self.root, self.subset_name)
+        # 根目录 + 类别 = 数据集的.txt
+        for line in open(os.path.join(rootpath, 'ImageSets', 'Main', self.name + '.txt')):
             self.ids.append((rootpath, line.strip()))
 
     def __getitem__(self, index):
@@ -199,7 +206,7 @@ class DOTADetection(data.Dataset):
     def _get_voc_results_file_template(self):
         filename = 'comp4_det_test' + '_{:s}.txt'
         filedir = os.path.join(
-            self.root, 'results', subset_name, 'Main')
+            self.root, 'results', self.subset_name, 'Main')
         if not os.path.exists(filedir):
             os.makedirs(filedir)
         path = os.path.join(filedir, filename)
@@ -225,8 +232,8 @@ class DOTADetection(data.Dataset):
                                        dets[k, 2] + 1, dets[k, 3] + 1))
 
     def _do_python_eval(self, output_dir='output'):
-        rootpath = os.path.join(self.root, subset_name)
-        name = self.image_set[0][1]
+        rootpath = os.path.join(self.root, self.subset_name)
+        name = self.name
         annopath = os.path.join(
             rootpath,
             'Annotations',
