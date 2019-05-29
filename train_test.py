@@ -37,7 +37,7 @@ parser.add_argument(
     '--basenet', default='weights/vgg16_reducedfc.pth', help='pretrained base model')
 parser.add_argument('--jaccard_threshold', default=0.5,
                     type=float, help='Min Jaccard index for matching')
-parser.add_argument('-b', '--batch_size', default=16,
+parser.add_argument('-b', '--batch_size', default=32,
                     type=int, help='Batch size for training')
 parser.add_argument('--num_workers', default=4,
                     type=int, help='Number of workers used in dataloading')
@@ -59,7 +59,7 @@ parser.add_argument('-max', '--max_epoch', default=300,
                     type=int, help='max epoch for retraining')
 parser.add_argument('--weight_decay', default=5e-4,
                     type=float, help='Weight decay for SGD')
-parser.add_argument('-we', '--warm_epoch', default=50,
+parser.add_argument('-we', '--warm_epoch', default=20,
                     type=int, help='max epoch for retraining')
 parser.add_argument('--gamma', default=0.1,
                     type=float, help='Gamma update for SGD')
@@ -86,10 +86,10 @@ if args.dataset == 'VOC':
     cfg = (VOC_300, VOC_512)[args.size == '512']
 # DOTA
 elif args.dataset == 'DOTA':
-    train_sets = 'subset_planes_500_gap200_GSC' # A subset of DOTA
-    train_list = 'trainval'
-    val_sets = 'subset_planes_500_gap200_val_GSC'
-    val_list = 'plane_val'
+    train_sets = 'subset_planes_500_gap200_GSC' # A subset of DOTA for training
+    train_list = 'trainval' # dataset type
+    val_sets = 'subset_planes_500_gap200_val_GSC' # A subset of DOTA for testing
+    val_list = 'plane_val' # dataset type
     cfg = DOTA_500
 else:
     train_sets = [('2017', 'train')]

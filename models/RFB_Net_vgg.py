@@ -136,11 +136,11 @@ class RFBNet(nn.Module):
         head: "multibox head" consists of loc and conf conv layers
     """
 
-    def __init__(self, size, base, extras, head, num_classes):
+    def __init__(self, size, base, extras, head, num_classes,phase):
         super(RFBNet, self).__init__()
         self.num_classes = num_classes
         self.size = size
-
+        self.phase = phase
         if size == 300:
             self.indicator = 3
         elif size == 512:
@@ -208,7 +208,8 @@ class RFBNet(nn.Module):
 
         loc = torch.cat([o.view(o.size(0), -1) for o in loc], 1)
         conf = torch.cat([o.view(o.size(0), -1) for o in conf], 1)
-
+        if self.phase == 'test':
+            test = True
         if test:
             output = (
                 loc.view(loc.size(0), -1, 4),  # loc preds
@@ -307,11 +308,11 @@ mbox = {
 }
 
 
-def build_net(size=300, num_classes=21):
+def build_net(size=300, num_classes=21,phase='train'):
     if size != 300 and size != 512:
         print("Error: Sorry only RFBNet300 and RFBNet512 are supported!")
         return
 
     return RFBNet(size, *multibox(size, vgg(vgg_base[str(size)], 3),
                                   add_extras(size, extras[str(size)], 1024),
-                                  mbox[str(size)], num_classes), num_classes=num_classes)
+                                  mbox[str(size)], num_classes), num_classes=num_classes,phase=phase)
