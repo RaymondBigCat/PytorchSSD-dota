@@ -12,9 +12,9 @@ import torch.nn.init as init
 import torch.optim as optim
 import torch.utils.data as data
 from torch.autograd import Variable
-os.environ["CUDA_VISIBLE_DEVICES"] = "1" #设置GPU1可见
+#os.environ["CUDA_VISIBLE_DEVICES"] = "1" #设置GPU1可见
 from data import VOCroot, COCOroot, VOC_300, VOC_512, COCO_300, COCO_512, COCO_mobile_300, AnnotationTransform, \
-    COCODetection, VOCDetection, detection_collate, BaseTransform, preproc,DOTA_500, DOTAroot, DOTADetection
+    COCODetection, VOCDetection, detection_collate, BaseTransform, preproc,DOTA_500, DOTAroot, DOTADetection, DOTA_CLASSES
 from layers.functions import Detect, PriorBox
 from layers.modules import MultiBoxLoss
 from utils.nms_wrapper import nms
@@ -37,13 +37,13 @@ parser.add_argument(
     '--basenet', default='weights/vgg16_reducedfc.pth', help='pretrained base model')
 parser.add_argument('--jaccard_threshold', default=0.5,
                     type=float, help='Min Jaccard index for matching')
-parser.add_argument('-b', '--batch_size', default=32,
+parser.add_argument('-b', '--batch_size', default=64,
                     type=int, help='Batch size for training')
 parser.add_argument('--num_workers', default=4,
                     type=int, help='Number of workers used in dataloading')
 parser.add_argument('--cuda', default=True,
                     type=bool, help='Use cuda to train model')
-parser.add_argument('--ngpu', default=1, type=int, help='gpus')
+parser.add_argument('--ngpu', default=2, type=int, help='gpus')
 parser.add_argument('--lr', '--learning-rate',
                     default=4e-3, type=float, help='initial learning rate')
 parser.add_argument('--momentum', default=0.9, type=float, help='momentum')
@@ -55,23 +55,23 @@ parser.add_argument('--resume_epoch', default=0,
 parser.add_argument('--resume_time', default='2019-05-20-21:48',
                     type=str, help='resume time for retraining')
 
-parser.add_argument('-max', '--max_epoch', default=300,
+parser.add_argument('-max', '--max_epoch', default=400,
                     type=int, help='max epoch for retraining')
 parser.add_argument('--weight_decay', default=5e-4,
                     type=float, help='Weight decay for SGD')
-parser.add_argument('-we', '--warm_epoch', default=20,
+parser.add_argument('-we', '--warm_epoch', default=100,
                     type=int, help='max epoch for retraining')
 parser.add_argument('--gamma', default=0.1,
                     type=float, help='Gamma update for SGD')
 parser.add_argument('--log_iters', default=True,
                     type=bool, help='Print the loss at each iteration')
-parser.add_argument('--save_folder', default='/media/b622/HardDisk/DOTAweights/',
+parser.add_argument('--save_folder', default='/home/buaab622/project/PytorchSSD-dota/weights/DOTAweights',
                     help='Location to save checkpoint models')
 parser.add_argument('--date', default='1213')
-parser.add_argument('--save_frequency', default=20)
+parser.add_argument('--save_frequency', default=10)
 parser.add_argument('--retest', default=False, type=bool,
                     help='test cache results')
-parser.add_argument('--test_frequency', default=20)
+parser.add_argument('--test_frequency', default=10)
 parser.add_argument('--visdom', default=False, type=str2bool, help='Use visdom to for loss visualization')
 parser.add_argument('--send_images_to_visdom', type=str2bool, default=False,
                     help='Sample a random image from each 10th batch, send it to visdom after augmentations step')
@@ -86,10 +86,10 @@ if args.dataset == 'VOC':
     cfg = (VOC_300, VOC_512)[args.size == '512']
 # DOTA
 elif args.dataset == 'DOTA':
-    train_sets = 'subset_planes_500_gap200_GSC' # A subset of DOTA for training
-    train_list = 'trainval' # dataset type
-    val_sets = 'subset_planes_500_gap200_val_GSC' # A subset of DOTA for testing
-    val_list = 'plane_val' # dataset type
+    train_sets = 'subset_car_ship_500_GSC' # A subset of DOTA for training
+    train_list = 'car_ship_train' # dataset type
+    val_sets = 'subset_car_ship_500_val_GSC' # A subset of DOTA for testing
+    val_list = 'car_ship_val' # dataset type
     cfg = DOTA_500
 else:
     train_sets = [('2017', 'train')]
@@ -131,7 +131,7 @@ elif 'mobile' in args.version:
 p = (0.6, 0.2)[args.version == 'RFB_mobile']
 num_classes = (21, 81)[args.dataset == 'COCO']
 if args.dataset == 'DOTA':
-    num_classes = 2
+    num_classes = len(DOTA_CLASSES)
 batch_size = args.batch_size
 weight_decay = 0.0005
 gamma = 0.1
@@ -414,7 +414,7 @@ def test_net(save_folder, net, detector, cuda, testset, transform, max_per_image
     num_images = len(testset)
     num_classes = (21, 81)[args.dataset == 'COCO']
     if args.dataset == 'DOTA':
-        num_classes = 2
+        num_classes = len(DOTA_CLASSES)
     all_boxes = [[[] for _ in range(num_images)]
                  for _ in range(num_classes)]
 
