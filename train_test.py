@@ -59,7 +59,7 @@ parser.add_argument('-max', '--max_epoch', default=400,
                     type=int, help='max epoch for retraining')
 parser.add_argument('--weight_decay', default=5e-4,
                     type=float, help='Weight decay for SGD')
-parser.add_argument('-we', '--warm_epoch', default=100,
+parser.add_argument('-we', '--warm_epoch', default=10,
                     type=int, help='max epoch for retraining')
 parser.add_argument('--gamma', default=0.1,
                     type=float, help='Gamma update for SGD')
@@ -292,6 +292,14 @@ def train():
     mean_loss_c = 0
     mean_loss_l = 0
     epoch_time = 0
+    
+    # detailed log 
+    log_file.write('train_set: ' + train_sets+ '\n')
+    log_file.write('GPUs:' + str(args.ngpu)+ '\n')
+    log_file.write('batch_size: ' + str(args.batch_size)+ '\n')
+    log_file.write('learning-rate: ' + str(args.lr)+ '\n')
+    log_file.write('warm_epoch: ' + str(args.warm_epoch) + '\n')
+    
     for iteration in range(start_iter, max_iter + 10):
         if (iteration % epoch_size == 0):
             # create batch iterator
