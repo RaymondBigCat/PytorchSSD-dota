@@ -45,7 +45,7 @@ parser.add_argument('--cuda', default=True,
                     type=bool, help='Use cuda to train model')
 parser.add_argument('--ngpu', default=2, type=int, help='gpus')
 parser.add_argument('--lr', '--learning-rate',
-                    default=4e-3, type=float, help='initial learning rate')
+                    default=1e-3, type=float, help='initial learning rate')
 parser.add_argument('--momentum', default=0.9, type=float, help='momentum')
 
 parser.add_argument('--resume_net', default=False, help='resume net for retraining')
@@ -59,7 +59,7 @@ parser.add_argument('-max', '--max_epoch', default=400,
                     type=int, help='max epoch for retraining')
 parser.add_argument('--weight_decay', default=5e-4,
                     type=float, help='Weight decay for SGD')
-parser.add_argument('-we', '--warm_epoch', default=10,
+parser.add_argument('-we', '--warm_epoch', default=20,
                     type=int, help='max epoch for retraining')
 parser.add_argument('--gamma', default=0.1,
                     type=float, help='Gamma update for SGD')
@@ -68,10 +68,10 @@ parser.add_argument('--log_iters', default=True,
 parser.add_argument('--save_folder', default='/home/buaab622/project/PytorchSSD-dota/weights/DOTAweights',
                     help='Location to save checkpoint models')
 parser.add_argument('--date', default='1213')
-parser.add_argument('--save_frequency', default=10)
+parser.add_argument('--save_frequency', default=20)
 parser.add_argument('--retest', default=False, type=bool,
                     help='test cache results')
-parser.add_argument('--test_frequency', default=10)
+parser.add_argument('--test_frequency', default=20)
 parser.add_argument('--visdom', default=False, type=str2bool, help='Use visdom to for loss visualization')
 parser.add_argument('--send_images_to_visdom', type=str2bool, default=False,
                     help='Sample a random image from each 10th batch, send it to visdom after augmentations step')
@@ -86,10 +86,10 @@ if args.dataset == 'VOC':
     cfg = (VOC_300, VOC_512)[args.size == '512']
 # DOTA
 elif args.dataset == 'DOTA':
-    train_sets = 'subset_car_ship_500_GSC' # A subset of DOTA for training
-    train_list = 'car_ship_train' # dataset type
-    val_sets = 'subset_car_ship_500_val_GSC' # A subset of DOTA for testing
-    val_list = 'car_ship_val' # dataset type
+    train_sets = 'subset_plane_1000_train_GSC' # A subset of DOTA for training
+    train_list = 'plane_1000_train' # dataset type
+    val_sets = 'subset_plane_1000_val_GSC' # A subset of DOTA for testing
+    val_list = 'plane_1000_val' # dataset type
     cfg = DOTA_500
 else:
     train_sets = [('2017', 'train')]
@@ -255,7 +255,7 @@ def train():
     stepvalues_VOC = (150 * epoch_size, 200 * epoch_size, 250 * epoch_size)
     stepvalues_COCO = (90 * epoch_size, 120 * epoch_size, 140 * epoch_size)
     # DOTA
-    stepvalues_DOTA = (150 * epoch_size, 200 * epoch_size, 250 * epoch_size)
+    stepvalues_DOTA = (100 * epoch_size, 150 * epoch_size, 200 * epoch_size)
     stepvalues = stepvalues_DOTA
     print('Training', args.version, 'on', train_dataset.name)
     step_index = 0
@@ -299,6 +299,9 @@ def train():
     log_file.write('batch_size: ' + str(args.batch_size)+ '\n')
     log_file.write('learning-rate: ' + str(args.lr)+ '\n')
     log_file.write('warm_epoch: ' + str(args.warm_epoch) + '\n')
+    log_file.write('lr decay step:')
+    for item in stepvalues_DOTA:
+        log_file.write(str(item/epoch_size)+',')
     
     for iteration in range(start_iter, max_iter + 10):
         if (iteration % epoch_size == 0):

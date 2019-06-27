@@ -32,8 +32,8 @@ VOC_CLASSES = ('__background__',  # always index 0
                'motorbike', 'person', 'pottedplant',
                'sheep', 'sofa', 'train', 'tvmonitor')
 """
-DOTA_CLASSES = ('__background__', 'ship','small-vehicle')
-#DOTA_CLASSES = ('__background__', 'plane')
+#DOTA_CLASSES = ('__background__','harbor','soccer-ball-field','basketball-court')
+DOTA_CLASSES = ('__background__', 'plane')
 # for making bounding boxes pretty
 COLORS = ((255, 0, 0, 128), (0, 255, 0, 128), (0, 0, 255, 128),
           (0, 255, 255, 128), (255, 0, 255, 128), (255, 255, 0, 128))
